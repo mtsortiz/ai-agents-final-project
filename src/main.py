@@ -198,19 +198,21 @@ def capitan_pedidos_node(state: AgentState, llm_with_tools):
             break
 
     system_prompt = f"""
-Eres el "Capitán", gerente de "La Delicia". Debes:
+Eres el "Capitán", gerente de "La Delicia". El cliente se está despidiendo. Debes:
 1) Leer la conversación entre Bruno y el cliente.
 2) Crear un resumen muy conciso (máximo 2 frases) de lo que consultó el cliente.
 3) Llamar a la herramienta `guardar_informe_en_notion` usando:
    - consulta = la primera pregunta del cliente
    - resumen = tu resumen
+4) Después de guardar, despedirte cordialmente como Bruno del restaurante.
+
 CONVERSACIÓN:
 ---
 {conversation_history}
 ---
     """.strip()
 
-    human_prompt = "Analiza y llama ahora a `guardar_informe_en_notion` con los argumentos solicitados."
+    human_prompt = "Analiza, guarda en Notion y despídete del cliente cordialmente."
     tool_choice = {
         "function_calling_config": {
             "mode": "ANY",
@@ -327,9 +329,32 @@ def build_graph(llm_with_tools, tools_list):
         lambda s: _needs_tools_filtered(s, ALLOWED_MENU_TOOLS),
         {"tools": "tools", "__end__": END},
     )
-    graph.add_edge("tools", "experto_menu")
+    
+    # Edge condicional desde tools: debe regresar al agente correcto
+    def _route_from_tools(state):
+        """Decide si tools debe regresar a experto_menu, capitan_pedidos, o terminar"""
+        msgs = state["messages"]
+        
+        # Buscar el último ToolMessage para ver qué herramienta se ejecutó
+        for msg in reversed(msgs):
+            if isinstance(msg, ToolMessage):
+                tool_name = getattr(msg, 'name', '')
+                if tool_name == "guardar_informe_en_notion":
+                    # Si se guardó en Notion, ir directamente a END
+                    return "__end__"
+                elif tool_name in ALLOWED_MENU_TOOLS:
+                    return "experto_menu"
+        
+        # Fallback: regresar a experto_menu
+        return "experto_menu"
+    
+    graph.add_conditional_edges(
+        "tools",
+        _route_from_tools,
+        {"experto_menu": "experto_menu", "__end__": END},
+    )
 
-    # capitan_pedidos → tools solo si pide guardar_informe_en_notion
+    # capitan_pedidos → tools solo si pide guardar_informe_en_notion  
     graph.add_conditional_edges(
         "capitan_pedidos",
         lambda s: _needs_tools_filtered(s, ALLOWED_CAPTAIN_TOOLS),
@@ -370,31 +395,14 @@ def main():
 
     state_messages: list[BaseMessage] = []
 
-    exit_words = {"exit", "quit", "salir", "gracias", "chau", "perfecto"}
-
     while True:
         query = input("\n👤 Cliente: ").strip()
         state_messages.append(HumanMessage(content=query))
-
-        # Salida inmediata sin LLM
-        if query.lower() in exit_words:
-            primera = next((m.content for m in state_messages if isinstance(m, HumanMessage) and m.content), "Interacción sin consulta inicial")
-            resumen = "El cliente finalizó la conversación. Consultas previas: " + "; ".join(
-                m.content for m in state_messages if isinstance(m, HumanMessage) and m.content
-            )[:1800]
-            # llamamos la tool python directamente
-            res = guardar_informe_en_notion.invoke({"consulta": primera, "resumen": resumen})
-            print("\n Bruno:", res)
-            print(" Bruno: ¡Gracias por tu visita! ¡Vuelve pronto!")
-            break
-
 
         result = rag_agent.invoke(
             {"messages": state_messages},
             config={"recursion_limit": 25}
         )
-
-
 
         # Tomar el último mensaje “de texto” seguro
         final = result["messages"][-1]
@@ -408,7 +416,14 @@ def main():
             if not text:
                 text = "[Sin respuesta de texto del modelo]"
 
-        print(f"\n Bruno: {text}")
+        print(f"\n🤖 Bruno: {text}")
+
+        # Detectar si se ejecutó guardar_informe_en_notion (señal de cierre)
+        tool_messages = [m for m in result["messages"] if isinstance(m, ToolMessage)]
+        if any("Informe guardado en Notion" in getattr(m, "content", "") for m in tool_messages):
+            print("\n✅ ¡Conversación finalizada y guardada en Notion!")
+            print("🤖 Bruno: ¡Gracias por tu visita! ¡Vuelve pronto a La Delicia!")
+            break
 
         # Actualizar estado
         state_messages = result["messages"]
