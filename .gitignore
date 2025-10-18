@@ -13,6 +13,9 @@ venv/
 # VS Code workspace settings
 .vscode/
 
+# Vector database (Chroma)
+.chroma/
+
 # Distribution / packaging
 build/
 dist/

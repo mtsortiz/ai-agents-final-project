@@ -15,6 +15,9 @@ python-dotenv>=1.0.1
 notion-client>=2.2.1
 pydantic>=2.7
 
+# Observabilidad
+langsmith>=0.1.117
+
 # (gRPC warnings provienen del stack de Google; normalmente no hace falta fijar grpcio,
 # pero si tu entorno lo pide, descomenta la siguiente línea)
 # grpcio>=1.62

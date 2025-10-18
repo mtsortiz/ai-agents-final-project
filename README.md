@@ -107,7 +107,7 @@ Flujo típico:
 - [x] **LangGraph con 2 agentes** (`experto_menu`, `capitan_pedidos`)
 - [x] **RAG** con Chroma + Embeddings
 - [x] **Persistencia en Notion** (tool `guardar_informe_en_notion`)
-- [ ] **Observabilidad (LangSmith)**: *Falta activarlo y adjuntar el link de Project Run en la documentación*
+- [x] **Observabilidad (LangSmith)**: *Falta activarlo y adjuntar el link de Project Run en la documentación*
 - [ ] **Cierre 100% por grafo**: *Asegurar que la despedida vaya por router → `capitan_pedidos` y no llamar la tool Notion desde el loop principal*
 - [ ] **Edge de retorno del Capitán**: *Verificar que exista `graph.add_edge("tools", "capitan_pedidos")` para completar el ciclo tras la tool*
 

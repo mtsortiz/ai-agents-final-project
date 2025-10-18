@@ -17,13 +17,30 @@ from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
+# LangSmith imports para observabilidad
+from langsmith import traceable
+import langsmith
+
 def setup_environment():
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     dotenv_path = os.path.join(repo_root, ".env")
     load_dotenv(dotenv_path=dotenv_path)
+    
+    # Validar variables obligatorias
     if not os.getenv("GEMINI_API_KEY"):
         raise ValueError("Falta GEMINI_API_KEY en .env")
-    print(" Variables de entorno cargadas correctamente.")
+    
+    # Configurar LangSmith para observabilidad
+    if os.getenv("LANGCHAIN_TRACING_V2") == "true":
+        if os.getenv("LANGCHAIN_API_KEY"):
+            print("✓ LangSmith tracing habilitado")
+            print(f"  - Proyecto: {os.getenv('LANGCHAIN_PROJECT', 'default')}")
+        else:
+            print("⚠️  LANGCHAIN_TRACING_V2=true pero falta LANGCHAIN_API_KEY")
+    else:
+        print("ℹ️  LangSmith tracing deshabilitado")
+    
+    print("✓ Variables de entorno cargadas correctamente.")
 
 def load_documents() -> list[Document]:
     menu_text = """
@@ -73,6 +90,7 @@ def create_or_load_vectorstore(documents: list[Document], embedding_model) -> Ch
     return vectorstore
 
 @tool
+@traceable(name="off_topic_tool")
 def off_topic_tool():
     """
     Se activa cuando el usuario pregunta algo no relacionado con el restaurante,
@@ -85,6 +103,7 @@ def off_topic_tool():
     )
 
 @tool
+@traceable(name="guardar_informe_en_notion")
 def guardar_informe_en_notion(consulta: str, resumen: str):
     """
     Guarda en Notion un informe con la primera consulta del cliente y un resumen final.
@@ -129,6 +148,7 @@ def define_tools(vectorstore: Chroma) -> list:
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
 
+@traceable(name="experto_menu_node")
 def experto_menu_node(state: AgentState, llm):
     """Invoca al LLM con el rol de mozo para que decida el siguiente paso."""
     system_prompt = """
@@ -147,6 +167,7 @@ def experto_menu_node(state: AgentState, llm):
     response = llm.invoke(messages)
     return {"messages": [response]}
 
+@traceable(name="capitan_pedidos_node")
 def capitan_pedidos_node(state: AgentState, llm_with_tools):
 
     # 2.1) ¿Hay al menos un mensaje humano no vacío?
@@ -212,6 +233,7 @@ CONVERSACIÓN:
         )
         return {"messages": [resp]}
 
+@traceable(name="route_decision")
 def route(state):
     """Decide a qué agente enviar la conversación basándose en el ÚLTIMO mensaje HUMANO."""
     last_human = None
