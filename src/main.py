@@ -367,8 +367,8 @@ def build_graph(llm_with_tools, tools_list):
 def main():
     setup_environment()
 
-    # Desactivar LangSmith por defecto
-    os.environ.pop("LANGCHAIN_TRACING_V2", None)
+    # MANTENER LangSmith habilitado (no desactivar tracing)
+    # Comentado: os.environ.pop("LANGCHAIN_TRACING_V2", None)
 
     llm = ChatGoogleGenerativeAI(
         model="models/gemini-2.5-flash",
