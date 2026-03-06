@@ -22,10 +22,18 @@ El agente consulta una base de conocimiento (Chroma) y, al cerrar la conversaci�
 ---
 
 ## 📋 Requisitos del Sistema
+
+**Opción A - Con Docker (Recomendado):**
+- **Docker** y **Docker Compose** instalados
+- **Git** (para clonar el repositorio)
+- **Acceso a internet**
+
+**Opción B - Instalación Manual:**
 - **Python 3.10+** (recomendado 3.11 o 3.12)
 - **Git** (para clonar el repositorio)
 - **Acceso a internet** (para descargar dependencias)
-- **Cuentas y API Keys necesarias:**
+
+**Cuentas y API Keys necesarias (en ambas opciones):**
   - Google Generative AI (Gemini) - **OBLIGATORIO**
   - Notion (base de datos) - **OBLIGATORIO**
   - LangSmith (observabilidad) - **OPCIONAL**
@@ -34,13 +42,44 @@ El agente consulta una base de conocimiento (Chroma) y, al cerrar la conversaci�
 
 ## 🚀 Instalación Paso a Paso
 
-### 1️⃣ Clonar el Repositorio
+### 🐳 Opción A: Instalación con Docker (⭐ Recomendado)
+
+Para una instalación más sencilla sin configurar Python localmente, usa Docker:
+
+#### 1️⃣ Clonar el Repositorio
 ```bash
 git clone https://github.com/mtsortiz/ai-agents-final-project.git
 cd ai-agents-final-project/
 ```
 
-### 2️⃣ Crear Entorno Virtual
+#### 2️⃣ Copiar archivo de configuración
+```bash
+cp .env.example .env
+```
+
+#### 3️⃣ Editar el archivo `.env` con tus API Keys
+Reemplaza los valores placeholder con tus credenciales reales (ver sección **🔐 Configuración de Variables de Entorno** más adelante).
+
+#### 4️⃣ Ejecutar con Docker Compose
+```bash
+docker-compose up
+```
+
+**¡Listo!** El aplicativo estará corriendo en el contenedor. El programa te pedirá que interactúes con Bruno.
+
+Para obtener más instrucciones avanzadas de Docker, consulta [DOCKER.md](DOCKER.md).
+
+---
+
+### 💻 Opción B: Instalación Manual (Python local)
+
+#### 1️⃣ Clonar el Repositorio
+```bash
+git clone https://github.com/mtsortiz/ai-agents-final-project.git
+cd ai-agents-final-project/
+```
+
+#### 2️⃣ Crear Entorno Virtual
 ```bash
 # Crear entorno virtual
 python -m venv .venv
@@ -53,7 +92,7 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
-### 3️⃣ Instalar Dependencias
+#### 3️⃣ Instalar Dependencias
 ```bash
 pip install -r requirements.txt
 ```
