@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  ai-agents:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-agents-final-project
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - NOTION_API_KEY=${NOTION_API_KEY}
+      - NOTION_DATABASE_ID=${NOTION_DATABASE_ID}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-false}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-ai-agents-final-project}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    stdin_open: true
+    tty: true
+    restart: on-failure
+    networks:
+      - ai-network
+
+networks:
+  ai-network:
+    driver: bridge
